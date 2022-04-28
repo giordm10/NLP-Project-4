@@ -4,6 +4,7 @@ import linecache as lc
 import os
 import sys
 
+#T2 part one
 def creatOneFile():
     #  List of all files we are tryng to get data from
     original_files = ["amazon_cells_labelled.txt", "imdb_labelled.txt", "yelp_labelled.txt"]
@@ -19,16 +20,16 @@ def creatOneFile():
     # Open fulldataLabeled.txt in write mode
     with open('fulldataLabeled.txt', 'w') as outfile:
 
-        # Iterate through list
+        # Iterate through list of all file names
         for names in file_paths:
 
             # Open each file in read mode
             with open(names) as infile:
 
-                # read the data from file1 and
-                # file2 and write it in fulldataLabeled.txt
+                # take the information from input files and compile them all together into one file
                 outfile.write(infile.read())
 
+#T2 part two
 def trainTestSplit():
     testNumbers = []
     count = 0
@@ -60,6 +61,30 @@ def trainTestSplit():
         file.write(data)
     file.close()
 
+#T3
+def create30trainingSets():
+    #TODO: make this not run if file already exists
+    parent_directory = "trainingSets"
+    os.mkdir(parent_directory)
+
+    subfolders = ["size2600TrainingSets", "size1300TrainingSets", "size650TrainingSets"]
+    for item in subfolders:
+        subfolder_path = os.path.join(parent_directory, item)
+        os.mkdir(subfolder_path)
+
+    sizes = [2600, 1300, 650]
+    for size in sizes:
+        for version_num in range(1,11):
+            path1 = os.path.join(parent_directory, "size" + str(size) + "TrainingSets")
+            path2 = os.path.join(path1, "train" + str(version_num) + ".txt")
+            file = open(path2, "w")
+            for line_num in range(1,size+1):
+                value = randint(1,2600)
+                data = lc.getline('trainMaster.txt', value)
+
+                file.write(data)
+            file.close()
+
 if __name__ == "__main__":
     # imdb_path = sys.argv[1]
     # train_path = sys.argv[2]
@@ -69,6 +94,7 @@ if __name__ == "__main__":
 
     creatOneFile()
     trainTestSplit()
+    create30trainingSets()
 
 
 
