@@ -3,6 +3,9 @@ from random import randint
 import linecache as lc
 import os
 import sys
+import string
+import re
+from numpy import full
 
 #T2 part one
 def creatOneFile():
@@ -25,9 +28,62 @@ def creatOneFile():
 
             # Open each file in read mode
             with open(names) as infile:
-
+                
                 # take the information from input files and compile them all together into one file
                 outfile.write(infile.read())
+
+def normalize():
+    text_doc = []
+    #normalize texts
+    with open("fulldataLabeled.txt") as f:
+        for line in f.readlines():
+                # removes punctuation
+                line = line.translate(str.maketrans('', '', string.punctuation))
+                # makes everything lowercase
+                line = line.lower()
+                sentence = line.split()
+
+                text_doc.append(sentence)
+
+    #write information back into a file
+    with open("fulldataLabeled.txt", "w") as filehandle:
+        for review in text_doc:
+            for word in review:
+                filehandle.write("%s " % word)
+            filehandle.write("\n")
+
+                
+
+    # fullFile = open("fulldataLabeled.txt", "r")
+    # print(type(fullFile))
+    # punc = '''!()-[]{};:'"\, <>./?@#$%^&*_~'''
+    # for review in fullFile:
+    #     for letter in review: 
+    #         if letter in punc:  
+    #             fullFile = fullFile.replace(letter, "") 
+    
+    # fullFile = open("fulldataLabeled.txt", "r")
+    # print(type(fullFile))
+    # punc = '''!()-[]{};:'"\, <>./?@#$%^&*_~'''
+    # for review in fullFile:
+    #     review = re.sub(
+    #     for letter in review: 
+    #         if letter in punc:  
+    #             fullFile = fullFile.replace(letter, "")
+
+#     def removePOS():
+#   with open('browncorpus.txt','r') as f1:
+#     with open('newtest.txt','w+') as f2:
+#       for line in f1:
+#         currentline = line.split(' ')
+#         newline = ""
+#         for x in currentline:
+#           line = re.sub("(/.+)|([^a-zA-Z0-9'])", " ",x)
+#           line = re.sub("\s{2,}","",line)
+#           line = re.sub("\"|\'{2}","",line)
+#           line = re.sub("[0-9]+","<NUM>",line)
+#           newline += line
+#         f2.write(newline+'\n')
 
 #T2 part two
 def trainTestSplit():
@@ -93,6 +149,7 @@ if __name__ == "__main__":
     test_path = "/home/hpc/giordm10/CSC427/NLP-Project-4/testMaster.txt"
 
     creatOneFile()
+    normalize()
     trainTestSplit()
     create30trainingSets()
 
