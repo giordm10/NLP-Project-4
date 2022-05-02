@@ -1,10 +1,12 @@
 from pkg_resources import NullProvider
 from collections import defaultdict
 
-#Global Variables
+# Global Variables
 all_words = defaultdict(lambda: 0)
 all_words_negative = defaultdict(lambda: 0)
 all_words_positive = defaultdict(lambda: 0)
+binarized_negative = defaultdict(lambda: 0)
+binarized_positive = defaultdict(lambda: 0)
 total_word_count_positive = 0
 total_word_count_negative = 0
 
@@ -59,10 +61,15 @@ def calculate_conditional_likelihoods(all_words):
 
     for word in all_words:
         positive_likelihoods[word] = (all_words_positive[word] + 1) / (total_word_count_positive + len(all_words))
-        negative_likelihoods[word] = (all_words_negative[word] + 1) / (total_word_count_negative + len(all_words))
+        negative_likelihoods[word] = (all_words_negative[word] + 1) / (total_word_count_negative + len(all_words))    
 
     print(positive_likelihoods)
     print(negative_likelihoods)
+
+def makeBinary(review):
+    # make review a dictionary, so it's only unique words
+    
+    pass
 
 if __name__ == "__main__":
     all_words = make_vocab()
