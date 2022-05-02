@@ -52,39 +52,6 @@ def normalize():
                 filehandle.write("%s " % word)
             filehandle.write("\n")
 
-                
-
-    # fullFile = open("fulldataLabeled.txt", "r")
-    # print(type(fullFile))
-    # punc = '''!()-[]{};:'"\, <>./?@#$%^&*_~'''
-    # for review in fullFile:
-    #     for letter in review: 
-    #         if letter in punc:  
-    #             fullFile = fullFile.replace(letter, "") 
-    
-    # fullFile = open("fulldataLabeled.txt", "r")
-    # print(type(fullFile))
-    # punc = '''!()-[]{};:'"\, <>./?@#$%^&*_~'''
-    # for review in fullFile:
-    #     review = re.sub(
-    #     for letter in review: 
-    #         if letter in punc:  
-    #             fullFile = fullFile.replace(letter, "")
-
-#     def removePOS():
-#   with open('browncorpus.txt','r') as f1:
-#     with open('newtest.txt','w+') as f2:
-#       for line in f1:
-#         currentline = line.split(' ')
-#         newline = ""
-#         for x in currentline:
-#           line = re.sub("(/.+)|([^a-zA-Z0-9'])", " ",x)
-#           line = re.sub("\s{2,}","",line)
-#           line = re.sub("\"|\'{2}","",line)
-#           line = re.sub("[0-9]+","<NUM>",line)
-#           newline += line
-#         f2.write(newline+'\n')
-
 #T2 part two
 def trainTestSplit():
     testNumbers = []
