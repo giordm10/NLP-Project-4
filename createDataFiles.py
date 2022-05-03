@@ -2,9 +2,7 @@ from gettext import translation
 from random import randint
 import linecache as lc
 import os
-import sys
 import string
-import re
 from numpy import full
 
 #T2 part one
@@ -88,7 +86,8 @@ def trainTestSplit():
 def create30trainingSets():
     #TODO: make this not run if file already exists
     parent_directory = "trainingSets"
-    os.mkdir(parent_directory)
+    if not os.path.isdir(parent_directory):
+        os.mkdir(parent_directory)
 
     subfolders = ["size2600TrainingSets", "size1300TrainingSets", "size650TrainingSets"]
     for item in subfolders:
