@@ -108,7 +108,8 @@ def create30trainingSets():
     subfolders = ["size2600TrainingSets", "size1300TrainingSets", "size650TrainingSets"]
     for item in subfolders:
         subfolder_path = os.path.join(parent_directory, item)
-        os.mkdir(subfolder_path)
+        if not os.path.isdir(subfolder_path):
+            os.mkdir(subfolder_path)
 
     sizes = [2600, 1300, 650]
     for size in sizes:
