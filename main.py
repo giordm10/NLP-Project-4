@@ -27,6 +27,11 @@ class NBModel():
         self.positive_likelihoods = positive_likelihoods
         self.negative_likelihoods = negative_likelihoods
 
+class PairModel():
+    def __init__(self, model_one, model_two):
+        self.model_one = model_one
+        self.model_two = model_two
+
 # T2 part one
 def createOneFile():
     #  List of all files we are tryng to get data from
@@ -255,8 +260,7 @@ if __name__ == "__main__":
 
     all_words = make_vocab()
 
-    nbcountmodels = defaultdict(lambda: 0)
-    nbbinarymodels = defaultdict(lambda: 0)
+    allmodels = defaultdict(lambda: 0)
     i = 0
     for subfolder in os.listdir(trainingSets):
         subfolder_path = os.path.join(trainingSets, subfolder)
@@ -269,9 +273,19 @@ if __name__ == "__main__":
             countModel = NBModel(positive_prob, negative_prob, positive_likelihoods, negative_likelihoods)
             binaryModel = NBModel(positive_prob, negative_prob, positive_bin_likelihoods, negative_bin_likelihoods)
 
-            nbcountmodels[i] = countModel
-            nbbinarymodels[i] = binaryModel
+            allmodels[i] = countModel
+            allmodels[i+30] = binaryModel
             i += 1
+    
+    alreadyTested = []
+    pairs_list = []
+    for model in allmodels:
+        alreadyTested.append(model)
+        for model2 in allmodels:
+            if model2 not in alreadyTested:
+                new_pair = PairModel(model, model2)
+                pairs_list.append(new_pair)
+    print(len(pairs_list))
 
     #         print("count ", trainfile)
     #         test_sentences(positive_prob, negative_prob, positive_likelihoods, negative_likelihoods)
