@@ -224,25 +224,71 @@ def NBBinary():
     return positive_bin_likelihoods, negative_bin_likelihoods 
 
 def test_sentences(prior_pos, prior_neg, likelihood_pos, likelihood_neg):
-    test_sentence = "predictable with no fun"
-    test_array = test_sentence.split()
+    file = open("testMaster.txt","r")
+    test_bin_classifications = []
+    for line in file:
+        test_sentence = line
 
-    final_pos = 1
-    final_neg = 1
+        #test_sentence = "predictable with no fun"
+        test_array = test_sentence.split()
 
-    for word in test_array:
-        if likelihood_neg[word] or likelihood_pos[word] > 0:
-            final_pos *= likelihood_pos[word]
-            final_neg *= likelihood_neg[word]
+        # print(test_array)
+        # print(test_array[-1])
 
-    final_pos *= prior_pos
-    final_neg *= prior_neg
+        final_pos = 1
+        final_neg = 1
 
-    print("pos: ", final_pos)
-    print("neg: ", final_neg)
+        for word in test_array:
+            if likelihood_neg[word] or likelihood_pos[word] > 0:
+                final_pos *= likelihood_pos[word]
+                final_neg *= likelihood_neg[word]
 
-# def calc_fmeasure():
+        final_pos *= prior_pos
+        final_neg *= prior_neg
+
+        return_tuple = tuple((1 if final_pos>final_neg else 0,int(test_array[-1])))
+        
+        test_bin_classifications.append(return_tuple)
+
+        #print("pos: ", final_pos)
+        #print("neg: ", final_neg)
+    return test_bin_classifications
     
+def create_pairs(allmodels):
+    #Creates the list of pairs for T6
+    alreadyTested = []
+    pairs_list = []
+    for model in allmodels:
+        alreadyTested.append(model)
+        for model2 in allmodels:
+            if model2 not in alreadyTested:
+                new_pair = PairModel(model, model2)
+                pairs_list.append(new_pair)
+        
+    return pairs_list
+
+def calc_f_measure(alltestruns):
+    true_positives = 0
+    false_positives = 0
+    false_negatives = 0
+    
+    for item in alltestruns.keys():
+        for systemOutput,groundTruth in alltestruns[item]:
+            # systemOutput = alltestruns[0]
+            # groundTruth = alltestruns[1]
+            if systemOutput == 1 and groundTruth == 1:
+                true_positives += 1
+            elif systemOutput == 1 and groundTruth == 0:
+                false_positives += 1
+            elif systemOutput == 0 and groundTruth == 1:
+                false_negatives += 1
+
+    recall = true_positives/(true_positives+false_negatives)
+    precision = true_positives/(true_positives+false_positives)
+
+    f_measure = (2 * precision * recall) / (precision + recall)
+    print(f_measure)
+
 
 if __name__ == "__main__":
 
@@ -261,6 +307,7 @@ if __name__ == "__main__":
     all_words = make_vocab()
 
     allmodels = defaultdict(lambda: 0)
+    alltestruns = defaultdict(lambda: 0)
     i = 0
     for subfolder in os.listdir(trainingSets):
         subfolder_path = os.path.join(trainingSets, subfolder)
@@ -276,24 +323,19 @@ if __name__ == "__main__":
             allmodels[i] = countModel
             allmodels[i+30] = binaryModel
             i += 1
-    
-    alreadyTested = []
-    pairs_list = []
-    for model in allmodels:
-        alreadyTested.append(model)
-        for model2 in allmodels:
-            if model2 not in alreadyTested:
-                new_pair = PairModel(model, model2)
-                pairs_list.append(new_pair)
-    print(len(pairs_list))
 
-    #         print("count ", trainfile)
-    #         test_sentences(positive_prob, negative_prob, positive_likelihoods, negative_likelihoods)
+            # print("count ", trainfile)
+            alltestruns[i] = test_sentences(positive_prob, negative_prob, positive_likelihoods, negative_likelihoods)
             
-    #         print("binary")
-    #         test_sentences(positive_prob, negative_prob, positive_bin_likelihoods, negative_bin_likelihoods)
-    #         print(i)
-    #         print()
+            # print("binary")
+            alltestruns[i+30] = test_sentences(positive_prob, negative_prob, positive_bin_likelihoods, negative_bin_likelihoods)
+            # print(i)
+            # print()
+    
+    pairs_list = create_pairs(allmodels)
+
+    calc_f_measure(alltestruns)
+    # print(pairs_list)
 
     # print("COUNT MODELS")
     # print(nbcountmodels)
