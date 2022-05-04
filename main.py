@@ -1,6 +1,7 @@
 from collections import defaultdict
 from gettext import translation
 from random import randint
+from pathlib import Path
 import linecache as lc
 import os
 import string
@@ -19,10 +20,15 @@ total_word_count_negative = 0
 binary_negative_counts = defaultdict(lambda: 0)
 binary_positive_counts = defaultdict(lambda: 0)
 
-from numpy import full
+class NBModel():
+    def __init__(self, positive_prior, negative_prior, positive_likelihoods, negative_likelihoods):
+        self.positive_prior = positive_prior
+        self.negative_prior = negative_prior
+        self.positive_likelihoods = positive_likelihoods
+        self.negative_likelihoods = negative_likelihoods
 
-#T2 part one
-def creatOneFile():
+# T2 part one
+def createOneFile():
     #  List of all files we are tryng to get data from
     original_files = ["amazon_cells_labelled.txt", "imdb_labelled.txt", "yelp_labelled.txt"]
     file_paths = []
@@ -125,7 +131,7 @@ def create30trainingSets():
             file.close()
 
 def make_vocab():
-    with open("testing.txt") as f:
+    with open("fulldataLabeled.txt") as f:
         for review in f:
             review = review.split()[:-1]
             for word in review:
@@ -145,7 +151,7 @@ def calculate_priors():
     global total_word_count_negative
 
     # counting the number of positive and negative reviews
-    with open("testing.txt") as f:
+    with open("fulldataLabeled.txt") as f:
         for review in f:
             review_tokenized = review.split()
             rating = review_tokenized[-1]
@@ -230,6 +236,9 @@ def test_sentences(prior_pos, prior_neg, likelihood_pos, likelihood_neg):
     print("pos: ", final_pos)
     print("neg: ", final_neg)
 
+# def calc_fmeasure():
+    
+
 if __name__ == "__main__":
 
     # imdb_path = sys.argv[1]
@@ -238,31 +247,47 @@ if __name__ == "__main__":
     # test_path = sys.argv[3]
     test_path = "/home/hpc/giordm10/CSC427/NLP-Project-4/testMaster.txt"
 
-    creatOneFile()
+    trainingSets = Path("/home/hpc/giordm10/CSC427/NLP-Project-4/trainingSets")
+    createOneFile()
     normalize()
     trainTestSplit()
     create30trainingSets()
 
     all_words = make_vocab()
-    
-    positive_prob, negative_prob = calculate_priors()
 
-    positive_likelihoods, negative_likelihoods = calculate_conditional_likelihoods()
+    nbcountmodels = defaultdict(lambda: 0)
+    nbbinarymodels = defaultdict(lambda: 0)
+    i = 0
+    for subfolder in os.listdir(trainingSets):
+        subfolder_path = os.path.join(trainingSets, subfolder)
 
-    positive_bin_likelihoods, negative_bin_likelihoods = NBBinary()
+        for trainfile in os.listdir(subfolder_path):
+            positive_prob, negative_prob = calculate_priors()
+            positive_bin_likelihoods, negative_bin_likelihoods = NBBinary()
+            positive_likelihoods, negative_likelihoods = calculate_conditional_likelihoods()
 
-    for x in range(0,30):
-        calculate_priors()
-        NBBinary()
-    for x in range(0,30):
-        calculate_priors()
-        calculate_conditional_likelihoods()
+            countModel = NBModel(positive_prob, negative_prob, positive_likelihoods, negative_likelihoods)
+            binaryModel = NBModel(positive_prob, negative_prob, positive_bin_likelihoods, negative_bin_likelihoods)
 
+            nbcountmodels[i] = countModel
+            nbbinarymodels[i] = binaryModel
+            i += 1
 
-    for x in range(0,2):
-        if x == 0:
-            print("count")
-            test_sentences(positive_prob, negative_prob, positive_likelihoods, negative_likelihoods)
-        if x == 1:
-            print("binary")
-            test_sentences(positive_prob, negative_prob, positive_bin_likelihoods, negative_bin_likelihoods)
+    #         print("count ", trainfile)
+    #         test_sentences(positive_prob, negative_prob, positive_likelihoods, negative_likelihoods)
+            
+    #         print("binary")
+    #         test_sentences(positive_prob, negative_prob, positive_bin_likelihoods, negative_bin_likelihoods)
+    #         print(i)
+    #         print()
+
+    # print("COUNT MODELS")
+    # print(nbcountmodels)
+    # print()
+    # print("BINARY MODELS")
+    # print(nbbinarymodels)
+
+    # print(nbcountmodels[0].positive_prior)
+    # print(nbcountmodels[0].negative_prior)
+    # print(nbcountmodels[0].positive_likelihoods)
+    # print(nbcountmodels[0].negative_likelihoods)
