@@ -115,7 +115,7 @@ def create30trainingSets():
     parent_directory = "trainingSets"
     if not os.path.isdir(parent_directory):
         os.mkdir(parent_directory)
-
+    # check if subfolders exist
     subfolders = ["size2600TrainingSets", "size1300TrainingSets", "size650TrainingSets"]
     for item in subfolders:
         subfolder_path = os.path.join(parent_directory, item)
@@ -183,7 +183,7 @@ def calculate_priors():
 
             all_ratings.append(rating)
     
-
+    # calculates the probability of the word being positive and negative
     positive_prob = positive_count / len(all_ratings)
     negative_prob = negative_count / len(all_ratings)
 
@@ -268,11 +268,11 @@ def create_pairs(allmodels):
     return pairs_list
 
 def calc_f_measure(alltestruns):
-    true_positives = 0
-    false_positives = 0
-    false_negatives = 0
-    
+    count = 0
     for item in alltestruns.keys():
+        true_positives = 0
+        false_positives = 0
+        false_negatives = 0
         for systemOutput,groundTruth in alltestruns[item]:
             # systemOutput = alltestruns[0]
             # groundTruth = alltestruns[1]
@@ -283,12 +283,17 @@ def calc_f_measure(alltestruns):
             elif systemOutput == 0 and groundTruth == 1:
                 false_negatives += 1
 
-    recall = true_positives/(true_positives+false_negatives)
-    precision = true_positives/(true_positives+false_positives)
+        recall = true_positives/(true_positives+false_negatives)
+        precision = true_positives/(true_positives+false_positives)
 
-    f_measure = (2 * precision * recall) / (precision + recall)
-    print(f_measure)
-
+        f_measure = (2 * precision * recall) / (precision + recall)
+        # print("count: ", count)
+        # print("f_measure: ", f_measure)
+        # print("true_p: ", true_positives)
+        # print("false_p: ",false_positives)
+        # print("false_n: ",false_negatives)
+        # print()
+        count += 1
 
 if __name__ == "__main__":
 
