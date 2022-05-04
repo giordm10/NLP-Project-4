@@ -36,5 +36,7 @@ $ python3 createDataFiles.py ****
 
 ## Notes
 
+We used B = 1000 for our testing 
+
 Output: \
 the program will output: \

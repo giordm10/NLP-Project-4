@@ -259,41 +259,76 @@ def create_pairs(allmodels):
     alreadyTested = []
     pairs_list = []
     for model in allmodels:
+        # print("model: ", model)
+        #print(allmodels[model])
         alreadyTested.append(model)
+        # print(model)
         for model2 in allmodels:
             if model2 not in alreadyTested:
-                new_pair = PairModel(model, model2)
+                
+                new_pair = PairModel(allmodels[model], allmodels[model2])
                 pairs_list.append(new_pair)
-        
+    
+
+    # print(pairs_list)
     return pairs_list
 
-def calc_f_measure(alltestruns):
+def calc_f_measure(onetestrun):
+    # for item in alltestruns.keys():
+    true_positives = 0
+    false_positives = 0
+    false_negatives = 0
+    for systemOutput,groundTruth in onetestrun:
+        # systemOutput = alltestruns[0]
+        # groundTruth = alltestruns[1]
+        if systemOutput == 1 and groundTruth == 1:
+            true_positives += 1
+        elif systemOutput == 1 and groundTruth == 0:
+            false_positives += 1
+        elif systemOutput == 0 and groundTruth == 1:
+            false_negatives += 1
+
+    recall = true_positives/(true_positives+false_negatives)
+    precision = true_positives/(true_positives+false_positives)
+
+    f_measure = (2 * precision * recall) / (precision + recall)
+    # print("f_measure: ", f_measure)
+    # print("true_p: ", true_positives)
+    # print("false_p: ",false_positives)
+    # print("false_n: ",false_negatives)
+    # print()
+    return f_measure
+    
+def bootstrap(pairs_list):
+    b = 1000
     count = 0
-    for item in alltestruns.keys():
-        true_positives = 0
-        false_positives = 0
-        false_negatives = 0
-        for systemOutput,groundTruth in alltestruns[item]:
-            # systemOutput = alltestruns[0]
-            # groundTruth = alltestruns[1]
-            if systemOutput == 1 and groundTruth == 1:
-                true_positives += 1
-            elif systemOutput == 1 and groundTruth == 0:
-                false_positives += 1
-            elif systemOutput == 0 and groundTruth == 1:
-                false_negatives += 1
+    for pair in pairs_list:
+        model1 = pair.model_one
+        model2 = pair.model_two
 
-        recall = true_positives/(true_positives+false_negatives)
-        precision = true_positives/(true_positives+false_positives)
+        f_measure_a = calc_f_measure(model1)
+        print(f_measure_a)
+        f_measure_b = calc_f_measure(model2)
+        print(f_measure_b)
+        
+        delta_x = f_measure_a - f_measure_b
 
-        f_measure = (2 * precision * recall) / (precision + recall)
-        # print("count: ", count)
-        # print("f_measure: ", f_measure)
-        # print("true_p: ", true_positives)
-        # print("false_p: ",false_positives)
-        # print("false_n: ",false_negatives)
-        # print()
-        count += 1
+        print(delta_x)
+
+    file = open("testMaster.txt","r")
+    
+    for x in (1,b):
+        file2 = open("bootstrap"+str(x)+".txt","w")
+        for y in range(5):
+            r1 = randint(1,400)
+            lc.getline(file2,r1)
+
+        for item in trainNumbers:
+            data = lc.getline('fulldataLabeled.txt', item)
+        
+            file.write(data)
+            file.close()
+    
 
 if __name__ == "__main__":
 
@@ -327,19 +362,25 @@ if __name__ == "__main__":
 
             allmodels[i] = countModel
             allmodels[i+30] = binaryModel
-            i += 1
 
             # print("count ", trainfile)
             alltestruns[i] = test_sentences(positive_prob, negative_prob, positive_likelihoods, negative_likelihoods)
             
             # print("binary")
             alltestruns[i+30] = test_sentences(positive_prob, negative_prob, positive_bin_likelihoods, negative_bin_likelihoods)
+            
+            i += 1
             # print(i)
             # print()
     
-    pairs_list = create_pairs(allmodels)
+    pairs_list = create_pairs(alltestruns)
 
-    calc_f_measure(alltestruns)
+    # calc_f_measure(alltestruns)
+
+    bootstrap(pairs_list)
+
+    # print(alltestruns[0][0][0])
+    # print(pairs_list[0].model_one)
     # print(pairs_list)
 
     # print("COUNT MODELS")
