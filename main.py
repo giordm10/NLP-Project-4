@@ -1,4 +1,5 @@
 from collections import defaultdict
+from collections import OrderedDict
 from gettext import translation
 from random import randint
 from pathlib import Path
@@ -39,7 +40,7 @@ def createOneFile():
     file_paths = []
 
     # TODO: make this user input
-    dir = "/home/hpc/giordm10/CSC427/NLP-Project-4/sentiment labelled sentences"
+    dir = "/home/hpc/lishkom1/Project4/sentiment labelled sentences"
 
     # Creates a list of all full path files
     for file in original_files:
@@ -223,8 +224,8 @@ def NBBinary():
 
     return positive_bin_likelihoods, negative_bin_likelihoods 
 
-def test_sentences(prior_pos, prior_neg, likelihood_pos, likelihood_neg):
-    file = open("testMaster.txt","r")
+def test_sentences(prior_pos, prior_neg, likelihood_pos, likelihood_neg, testfile):
+    file = open(str(testfile),"r")
     test_bin_classifications = []
     for line in file:
         test_sentence = line
@@ -268,7 +269,7 @@ def create_pairs(allmodels):
                 
                 new_pair = PairModel(allmodels[model], allmodels[model2])
                 pairs_list.append(new_pair)
-    
+                #print("The output is: " + str(allmodels[model][0]),str(allmodels[model2][0]))
 
     # print(pairs_list)
     return pairs_list
@@ -281,6 +282,7 @@ def calc_f_measure(onetestrun):
     for systemOutput,groundTruth in onetestrun:
         # systemOutput = alltestruns[0]
         # groundTruth = alltestruns[1]
+        # print (systemOutput,groundTruth)
         if systemOutput == 1 and groundTruth == 1:
             true_positives += 1
         elif systemOutput == 1 and groundTruth == 0:
@@ -302,9 +304,15 @@ def calc_f_measure(onetestrun):
 def bootstrap(pairs_list):
     b = 1000
     count = 0
+
     for pair in pairs_list:
         model1 = pair.model_one
         model2 = pair.model_two
+
+        if count == 0:
+            print("Model 1 is: " + str(model1))
+            print("Model 2 is: " + str(model2))
+            count+=1
 
         f_measure_a = calc_f_measure(model1)
         print(f_measure_a)
@@ -316,29 +324,47 @@ def bootstrap(pairs_list):
         print(delta_x)
 
     file = open("testMaster.txt","r")
-    
-    for x in (1,b):
-        file2 = open("bootstrap"+str(x)+".txt","w")
-        for y in range(5):
-            r1 = randint(1,400)
-            lc.getline(file2,r1)
+    directory = "bootstrap_samples"
+    parent_dir = os.getcwd()
+    path = os.path.join(parent_dir, directory)
+    os.mkdir(path)
 
-        for item in trainNumbers:
-            data = lc.getline('fulldataLabeled.txt', item)
+    for each in (1,b):
+        file2name = "bootstrap"+str(each)+".txt"
+        file2 = open(file2name,"w")
+        for number in range(400):
+            r1 = randint(1,400)
+            file2.write(lc.getline(file,r1))
+        file2.close()
+        for model in od:
+
+            # overwrite alltestruns for each new test set
+            alltestruns[model] = test_sentences(od[model].positive_prior,od[model].negative_prior,od[model].positive_likelihoods,od[model].negative_likelihoods,file2name)
+            alltestruns[model+30] = test_sentences(od[model+30].positive_prior,od[model+30].negative_prior,od[model+30].positive_likelihoods,od[model+30].negative_likelihoods,file2name)
         
-            file.write(data)
-            file.close()
+        pairs_list = create_pairs(alltestruns)
+
+        # do the code at the start of this function for each pairs_list
+        # calculate f measures
+        # store each delta xi in a dictionary of size 1000 which is b
+
+        thousand_samples = defaultdict(lambda: 0)
+        thousand_samples[b] = "delta_xi"
+
+
+        
     
 
 if __name__ == "__main__":
 
     # imdb_path = sys.argv[1]
     # train_path = sys.argv[2]
-    train_path = "/home/hpc/giordm10/CSC427/NLP-Project-4/trainMaster.txt"
+    train_path = "/home/hpc/lishkom1/Project4/trainMaster.txt"
     # test_path = sys.argv[3]
-    test_path = "/home/hpc/giordm10/CSC427/NLP-Project-4/testMaster.txt"
+    test_path = "/home/hpc/lishkom1/Project4/testMaster.txt"
 
-    trainingSets = Path("/home/hpc/giordm10/CSC427/NLP-Project-4/trainingSets")
+    testfile = "testMaster.txt"
+    trainingSets = Path("/home/hpc/lishkom1/Project4/trainingSets")
     createOneFile()
     normalize()
     trainTestSplit()
@@ -364,10 +390,11 @@ if __name__ == "__main__":
             allmodels[i+30] = binaryModel
 
             # print("count ", trainfile)
-            alltestruns[i] = test_sentences(positive_prob, negative_prob, positive_likelihoods, negative_likelihoods)
+            # run this in bootstrap
+            alltestruns[i] = test_sentences(positive_prob, negative_prob, positive_likelihoods, negative_likelihoods,testfile)
             
             # print("binary")
-            alltestruns[i+30] = test_sentences(positive_prob, negative_prob, positive_bin_likelihoods, negative_bin_likelihoods)
+            alltestruns[i+30] = test_sentences(positive_prob, negative_prob, positive_bin_likelihoods, negative_bin_likelihoods,testfile)
             
             i += 1
             # print(i)
@@ -375,9 +402,13 @@ if __name__ == "__main__":
     
     pairs_list = create_pairs(alltestruns)
 
+    od = OrderedDict(sorted(allmodels.items()))
+    for model in od:
+        print(od[model].positive_prior)
+    # print(pairs_list[0])
     # calc_f_measure(alltestruns)
 
-    bootstrap(pairs_list)
+    # bootstrap(pairs_list)
 
     # print(alltestruns[0][0][0])
     # print(pairs_list[0].model_one)
