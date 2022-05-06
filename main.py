@@ -1,13 +1,13 @@
 from collections import defaultdict
-# from collections import OrderedDict
 from gettext import translation
 from random import randint
 from pathlib import Path
 import linecache as lc
 import os
-from re import S
 import shutil
 import string
+import matplotlib.pyplot as plt
+
 
 # Global Variables
 all_words = defaultdict(lambda: 0)
@@ -24,13 +24,9 @@ binary_negative_counts = defaultdict(lambda: 0)
 binary_positive_counts = defaultdict(lambda: 0)
 
 file_linenum_dict = defaultdict(lambda: 0)
-models_on_testmaster = defaultdict(lambda: 0)
-classified_sentences_count = defaultdict(lambda: 0)
-classified_sentences_binary = defaultdict(lambda: 0)
 delta_x_dict = defaultdict(lambda: 0)
 delta_xi_dict = defaultdict(lambda: 0)
 
-# will all p-values we store be the same?
 f1_pvalue_pairs = defaultdict(lambda: 0)
 
 alltestruns = defaultdict(lambda: 0)
@@ -240,17 +236,13 @@ def NBBinary():
 
     return positive_bin_likelihoods, negative_bin_likelihoods 
 
-def test_sentences(prior_pos, prior_neg, likelihood_pos, likelihood_neg, whichModel):
+def test_sentences(prior_pos, prior_neg, likelihood_pos, likelihood_neg):
     file = open("testMaster.txt","r")
     test_bin_classifications = []
     for line in file:
         test_sentence = line
 
-        #test_sentence = "predictable with no fun"
         test_array = test_sentence.split()
-
-        # print(test_array)
-        # print(test_array[-1])
 
         final_pos = 1
         final_neg = 1
@@ -264,22 +256,7 @@ def test_sentences(prior_pos, prior_neg, likelihood_pos, likelihood_neg, whichMo
         final_neg *= prior_neg
 
         return_tuple = tuple((1 if final_pos>final_neg else 0,int(test_array[-1])))
-        
-        if whichModel < 30:
-            classified_sentences_count[line] = defaultdict(lambda: 0)
-            classified_sentences_count[line][whichModel] = return_tuple
-        else:
-            classified_sentences_binary[line] = defaultdict(lambda: 0)
-            classified_sentences_binary[line][whichModel] = return_tuple
-            
-        # print(classified_sentences_count)
-
         test_bin_classifications.append(return_tuple)
-
-        #print("pos: ", final_pos)
-        #print("neg: ", final_neg)
-    #print(str(len(test_bin_classifications)))
-    #models_on_testmaster[whichModel] = test_bin_classifications
     return test_bin_classifications
     
 def create_pairs(allmodels):
@@ -332,8 +309,7 @@ def calc_f_measure(onetestrun):
     return f_measure
     
 def bootstrap(pairs_list):
-    b = 1000
-    #count = 0
+    b = 1000    #count = 0
     #sum = 0.0
     #delta_x = 0
 
@@ -459,8 +435,7 @@ def bootstrap(pairs_list):
         file.close()
     # print("sum is: " + str(sum))
     #print("f-measure is: " + str(delta_x_dict[pair])+" "+str(sum/b))
-        f1_pvalue_pairs[i] = tuple((abs(delta_x_dict[pair]),sum/b))
-        #print("sum: ", sum)
+        f1_pvalue_pairs[i] = tuple((abs(delta_x_dict[pair]),sum/b))        #print("sum: ", sum)
         print(f1_pvalue_pairs[i])
         i += 1
 
@@ -471,6 +446,59 @@ def getPValNumerator(delta_xi,delta_x):
     # print("delta_x: ", delta_x)
     return 1 if delta_xi >= 2*delta_x else 0
 
+
+def graph(pairs_list):
+    x = []
+    y = []
+
+    x1 = []
+    y1 = []
+    x2 = []
+    y2 = []
+
+    index = 0
+    for data_point in f1_pvalue_pairs:
+        x.append(f1_pvalue_pairs[data_point][0])
+        y.append(1 - f1_pvalue_pairs[data_point][1])
+
+        if pairs_list[index].model_one_number <= 29 and pairs_list[index].model_two_number <= 29:
+            x1.append(f1_pvalue_pairs[data_point][0])
+            y1.append(1 - f1_pvalue_pairs[data_point][1])
+        elif pairs_list[index].model_one_number > 29 and pairs_list[index].model_two_number > 29:
+            x1.append(f1_pvalue_pairs[data_point][0])
+            y1.append(1 - f1_pvalue_pairs[data_point][1])
+        else:
+            x2.append(f1_pvalue_pairs[data_point][0])
+            y2.append(1 - f1_pvalue_pairs[data_point][1])
+
+        index += 1
+
+    plt.scatter(x, y, marker='x', c='black')
+    
+    plt.xlabel('deltaF1')
+    plt.ylabel('1 - pValue')
+    plt.title('Plot 1')
+
+
+    plt.show()
+
+    plt.savefig("plot1.png")
+
+    plt.close()
+
+    plt.scatter(x1, y1, c='blue', marker='x', label='-> same data representations')
+    plt.scatter(x2, y2, c='red', marker='o', label='-> different data representations')
+    plt.legend()
+
+    # plot
+    plt.xlabel("deltaF1")
+    plt.ylabel("1 - pValue")
+    plt.title("Plot 2")
+    plt.show()
+
+    plt.savefig("plot2.png")
+
+    plt.close()
 
 if __name__ == "__main__":
 
@@ -505,44 +533,16 @@ if __name__ == "__main__":
             allmodels[i] = countModel
             allmodels[i+30] = binaryModel
 
-            # print("count ", trainfile)
-            # run this in bootstrap
-            alltestruns[i] = test_sentences(positive_prob, negative_prob, positive_likelihoods, negative_likelihoods,i)
-            
-            # print("binary")
-            alltestruns[i+30] = test_sentences(positive_prob, negative_prob, positive_bin_likelihoods, negative_bin_likelihoods,i+30)
+            alltestruns[i] = test_sentences(positive_prob, negative_prob, positive_likelihoods, negative_likelihoods)
+            alltestruns[i+30] = test_sentences(positive_prob, negative_prob, positive_bin_likelihoods, negative_bin_likelihoods)
             
             i += 1
-            # print(i)
             
-            # print()
     
-    # print(alltestruns)
-    # print("Starts here: ")
-    # for i in alltestruns:
-    #     print(i)
-    # od = OrderedDict(sorted(alltestruns.items()))
     pairs_list = create_pairs(alltestruns)
-    # print(len(pairs_list))
-    # od = OrderedDict(sorted(allmodels.items()))
-    # for model in od:
-    #     print(od[model].positive_prior)
-    # print(pairs_list[0])
-    # calc_f_measure(alltestruns)
 
     bootstrap(pairs_list)
-    # print(f1_pvalue_pairs)
-    # print(alltestruns[0][0][0])
-    # print(pairs_list[0].model_one)
-    # print(pairs_list)
 
-    # print("COUNT MODELS")
-    # print(nbcountmodels)
-    # print()
-    # print("BINARY MODELS")
-    # print(nbbinarymodels)
+    graph(pairs_list)    
+    
 
-    # print(nbcountmodels[0].positive_prior)
-    # print(nbcountmodels[0].negative_prior)
-    # print(nbcountmodels[0].positive_likelihoods)
-    # print(nbcountmodels[0].negative_likelihoods)
