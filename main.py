@@ -4,7 +4,11 @@ from random import randint
 from pathlib import Path
 import linecache as lc
 import os
+import shutil
 import string
+import matplotlib.pyplot as plt
+import sys
+
 
 # Global Variables
 all_words = defaultdict(lambda: 0)
@@ -20,6 +24,18 @@ total_word_count_negative = 0
 binary_negative_counts = defaultdict(lambda: 0)
 binary_positive_counts = defaultdict(lambda: 0)
 
+file_linenum_dict = defaultdict(lambda: 0)
+delta_x_dict = defaultdict(lambda: 0)
+delta_xi_dict = defaultdict(lambda: 0)
+
+f1_pvalue_pairs = defaultdict(lambda: 0)
+
+alltestruns = defaultdict(lambda: 0)
+
+fulldataLabeled_path = sys.argv[1]
+train_path = sys.argv[2]
+test_path = sys.argv[3]
+
 class NBModel():
     def __init__(self, positive_prior, negative_prior, positive_likelihoods, negative_likelihoods):
         self.positive_prior = positive_prior
@@ -28,9 +44,11 @@ class NBModel():
         self.negative_likelihoods = negative_likelihoods
 
 class PairModel():
-    def __init__(self, model_one, model_two):
+    def __init__(self, model_one, model_two, model_one_number, model_two_number):
         self.model_one = model_one
         self.model_two = model_two
+        self.model_one_number = model_one_number
+        self.model_two_number = model_two_number
 
 # T2 part one
 def createOneFile():
@@ -39,14 +57,14 @@ def createOneFile():
     file_paths = []
 
     # TODO: make this user input
-    dir = "/home/hpc/giordm10/CSC427/NLP-Project-4/sentiment labelled sentences"
+    dir = "./sentiment labelled sentences"
 
     # Creates a list of all full path files
     for file in original_files:
         file_paths.append(os.path.join(dir, file))
 
     # Open fulldataLabeled.txt in write mode
-    with open('fulldataLabeled.txt', 'w') as outfile:
+    with open(fulldataLabeled_path, 'w') as outfile:
 
         # Iterate through list of all file names
         for names in file_paths:
@@ -60,7 +78,7 @@ def createOneFile():
 def normalize():
     text_doc = []
     #normalize texts
-    with open("fulldataLabeled.txt") as f:
+    with open(fulldataLabeled_path) as f:
         for line in f.readlines():
                 # removes punctuation
                 line = line.translate(str.maketrans('', '', string.punctuation))
@@ -71,7 +89,7 @@ def normalize():
                 text_doc.append(sentence)
 
     #write information back into a file
-    with open("fulldataLabeled.txt", "w") as filehandle:
+    with open(fulldataLabeled_path, "w") as filehandle:
         for review in text_doc:
             for word in review:
                 filehandle.write("%s " % word)
@@ -96,7 +114,7 @@ def trainTestSplit():
     file = open(train_path, "w")
     #Puts test data in each file within the test folder
     for item in testNumbers:
-        data = lc.getline('fulldataLabeled.txt', item)
+        data = lc.getline(fulldataLabeled_path, item)
 
         file.write(data)
     file.close()
@@ -104,7 +122,7 @@ def trainTestSplit():
     file = open(test_path, "w")
     #Puts train data in each file within the train folder
     for item in trainNumbers:
-        data = lc.getline('fulldataLabeled.txt', item)
+        data = lc.getline(fulldataLabeled_path, item)
         
         file.write(data)
     file.close()
@@ -130,13 +148,13 @@ def create30trainingSets():
             file = open(path2, "w")
             for line_num in range(1,size+1):
                 value = randint(1,2600)
-                data = lc.getline('trainMaster.txt', value)
+                data = lc.getline(train_path, value)
 
                 file.write(data)
             file.close()
 
 def make_vocab():
-    with open("fulldataLabeled.txt") as f:
+    with open(fulldataLabeled_path) as f:
         for review in f:
             review = review.split()[:-1]
             for word in review:
@@ -224,16 +242,12 @@ def NBBinary():
     return positive_bin_likelihoods, negative_bin_likelihoods 
 
 def test_sentences(prior_pos, prior_neg, likelihood_pos, likelihood_neg):
-    file = open("testMaster.txt","r")
+    file = open(test_path,"r")
     test_bin_classifications = []
     for line in file:
         test_sentence = line
 
-        #test_sentence = "predictable with no fun"
         test_array = test_sentence.split()
-
-        # print(test_array)
-        # print(test_array[-1])
 
         final_pos = 1
         final_neg = 1
@@ -247,11 +261,7 @@ def test_sentences(prior_pos, prior_neg, likelihood_pos, likelihood_neg):
         final_neg *= prior_neg
 
         return_tuple = tuple((1 if final_pos>final_neg else 0,int(test_array[-1])))
-        
         test_bin_classifications.append(return_tuple)
-
-        #print("pos: ", final_pos)
-        #print("neg: ", final_neg)
     return test_bin_classifications
     
 def create_pairs(allmodels):
@@ -266,9 +276,9 @@ def create_pairs(allmodels):
         for model2 in allmodels:
             if model2 not in alreadyTested:
                 
-                new_pair = PairModel(allmodels[model], allmodels[model2])
+                new_pair = PairModel(allmodels[model], allmodels[model2], model, model2)
                 pairs_list.append(new_pair)
-    
+                #print("The output is: " + str(allmodels[model][0]),str(allmodels[model2][0]))
 
     # print(pairs_list)
     return pairs_list
@@ -278,9 +288,12 @@ def calc_f_measure(onetestrun):
     true_positives = 0
     false_positives = 0
     false_negatives = 0
+    f_measure = 0
+    # print("Onetestrun: is " + str(type(onetestrun[0])))
     for systemOutput,groundTruth in onetestrun:
         # systemOutput = alltestruns[0]
         # groundTruth = alltestruns[1]
+        # print (systemOutput,groundTruth)
         if systemOutput == 1 and groundTruth == 1:
             true_positives += 1
         elif systemOutput == 1 and groundTruth == 0:
@@ -292,6 +305,7 @@ def calc_f_measure(onetestrun):
     precision = true_positives/(true_positives+false_positives)
 
     f_measure = (2 * precision * recall) / (precision + recall)
+
     # print("f_measure: ", f_measure)
     # print("true_p: ", true_positives)
     # print("false_p: ",false_positives)
@@ -300,45 +314,223 @@ def calc_f_measure(onetestrun):
     return f_measure
     
 def bootstrap(pairs_list):
-    b = 1000
+    b = 1000    #count = 0
+    #sum = 0.0
+    #delta_x = 0
+
+    directory = "bootstrap_samples"
+    parent_dir = os.getcwd()
+    path = os.path.join(parent_dir, directory)
+    if os.path.exists(path):
+        shutil.rmtree(path)
+    os.mkdir(path)
+
+    for each in range(1,b+1):
+        filename = "bootstrap"+str(each)+".txt"
+        fullName = os.path.join(path, filename)
+        file = open(fullName,"w+")
+        file_linenum_dict[filename] = defaultdict(lambda: 0)
+        index = 0
+        for number in range(400):
+            r1 = randint(1,400)
+            #print(r1)
+            data = lc.getline(test_path,r1)
+            file.write(data)
+            file_linenum_dict[filename][index] = r1
+            index += 1
+        file.close()
+
+    d3_output_file = open("d3_output.txt", "w")
+
+    i = 1
     count = 0
     for pair in pairs_list:
+        print(count)
+        print()
+        count+=1
         model1 = pair.model_one
         model2 = pair.model_two
+        sum = 0.0
+
+        # if count == 0:
+        #     print("Model 1 is: " + str(model1))
+        #     print("Model 2 is: " + str(model2))
+        #     count+=1
 
         f_measure_a = calc_f_measure(model1)
-        print(f_measure_a)
+        # print("f_measure_a: ", f_measure_a)
         f_measure_b = calc_f_measure(model2)
-        print(f_measure_b)
+        # print("f_measure_b: ", f_measure_b)
         
+        swapped = False
+        if f_measure_a < f_measure_b:
+            f_measure_a, f_measure_b = f_measure_b, f_measure_a
+            swapped = True
+
         delta_x = f_measure_a - f_measure_b
 
-        print(delta_x)
+        delta_x_dict[pair] = delta_x
 
-    file = open("testMaster.txt","r")
-    
-    for x in (1,b):
-        file2 = open("bootstrap"+str(x)+".txt","w")
-        for y in range(5):
-            r1 = randint(1,400)
-            lc.getline(file2,r1)
+        #print(delta_x)
 
-        for item in trainNumbers:
-            data = lc.getline('fulldataLabeled.txt', item)
+        #file = open(test_path,"r")
+
+        # dir1 = open(path,"w")
+        #bootstrap_dict = defaultdict(lambda: 0)
         
-            file.write(data)
-            file.close()
+        for filename in os.listdir(path):
+            
+
+            filepath = os.path.join(path,filename)
+            file = open(filepath,"r")
+
+            a_list = []
+            b_list = []
+
+            # for now, this is storing the same thing in different lists, and pulling from them
+            # we can't make a_list for count and b_list for binary, because we need to compare
+            # two systems in a pair. It's not guaranteed that one is count and the other is binary.
+            # a_list should be for model 1. b_list should be for model 2
+            # the problem is, they're the same list
+            index = 0
+            for line in file:
+                # print(line)
+                # print()
+
+                # index = 0
+                # Loop through the file line by line
+                # file1 = open(test_path, "r")
+                # for line1 in file1:  
+                        
+                #     # checking string is present in line or not
+                #     if line in line1:
+                #         break
+                #     index += 1
+                #     # print(index)
+
+                #print(type(file_linenum_dict[filename][line]))
+                # print("index: ", index)
+                # print("file_linenum: ", file_linenum_dict[filename][index])
+                # if index == 10:
+                #     index -= 1
+                if swapped == False:
+                    a_list.append(alltestruns[pair.model_one_number][file_linenum_dict[filename][index] - 1])
+                    b_list.append(alltestruns[pair.model_two_number][file_linenum_dict[filename][index] - 1])
+                else:
+                    a_list.append(alltestruns[pair.model_two_number][file_linenum_dict[filename][index] - 1])
+                    b_list.append(alltestruns[pair.model_one_number][file_linenum_dict[filename][index] - 1])
+                # print(file_linenum_dict[filename][line])
+                # print("filename: ", type(filename))
+                # print("line: ", type(line))
+                # print(alltestruns[pair.model_one_number][file_linenum_dict[filename][line]])
+                
+
+                index += 1
+
+            # print(a_list)
+            # print()
+            # print(b_list)
+            f_measure_axi = calc_f_measure(a_list)
+            f_measure_bxi = calc_f_measure(b_list)
+            # if a_list == b_list:
+            #     print("true")
+            # else:
+            #     print("false")
+            # print("f_measure_axi: ", f_measure_axi)
+            # print("f_measure_bxi: ", f_measure_bxi)
+            # print()
+        
+            delta_xi_dict[filename] = f_measure_axi - f_measure_bxi
+            #print("Deltas are: " + (str(f_measure_a-f_measure_b)))
+            
+            # The delta calculated for one bootstrap file is compared to the delta for each pair
+            # in pairs_list... we add up each sum 1000 times, then divide by b, like in our notes
+            sum += getPValNumerator(delta_xi_dict[filename],delta_x_dict[pair])
+            # print("sum is: " + str(sum))
+        #print("The sum is: " + str(sum))
+        file.close()
+    # print("sum is: " + str(sum))
+    #print("f-measure is: " + str(delta_x_dict[pair])+" "+str(sum/b))
+        f1_pvalue_pairs[i] = tuple((delta_x_dict[pair],sum/b))        #print("sum: ", sum)
+        print(f1_pvalue_pairs[i])
+
+        d3_output_file.write(str(f1_pvalue_pairs[i]) + "\n")
+        i += 1
+
+    return path
+
+def getPValNumerator(delta_xi,delta_x):
+    # print("delta_xi: ", delta_xi)
+    # print("delta_x: ", delta_x)
+    return 1 if delta_xi >= 2*delta_x else 0
+
+
+def graph(pairs_list):
+    x = []
+    y = []
+
+    x1 = []
+    y1 = []
+    x2 = []
+    y2 = []
+
+    index = 0
+    for data_point in f1_pvalue_pairs:
+        x.append(f1_pvalue_pairs[data_point][0])
+        y.append(1 - f1_pvalue_pairs[data_point][1])
+
+        if pairs_list[index].model_one_number <= 29 and pairs_list[index].model_two_number <= 29:
+            x1.append(f1_pvalue_pairs[data_point][0])
+            y1.append(1 - f1_pvalue_pairs[data_point][1])
+        elif pairs_list[index].model_one_number > 29 and pairs_list[index].model_two_number > 29:
+            x1.append(f1_pvalue_pairs[data_point][0])
+            y1.append(1 - f1_pvalue_pairs[data_point][1])
+        else:
+            x2.append(f1_pvalue_pairs[data_point][0])
+            y2.append(1 - f1_pvalue_pairs[data_point][1])
+
+        index += 1
+    print(f1_pvalue_pairs)
+    plt.scatter(x, y, marker='x', c='black')
     
+    plt.xlabel('deltaF1')
+    plt.ylabel('1 - pValue')
+    plt.title('Plot 1')
+
+
+    plt.show()
+
+    plt.savefig("plot1_test.png")
+
+    plt.close()
+
+    plt.scatter(x1, y1, c='blue', marker='x', label='-> same data representations')
+    plt.scatter(x2, y2, c='red', marker='o', label='-> different data representations')
+    plt.legend()
+
+    # plot
+    plt.xlabel("deltaF1")
+    plt.ylabel("1 - pValue")
+    plt.title("Plot 2")
+    plt.show()
+
+    plt.savefig("plot2_test.png")
+
+    plt.close()
 
 if __name__ == "__main__":
 
-    # imdb_path = sys.argv[1]
-    # train_path = sys.argv[2]
-    train_path = "/home/hpc/giordm10/CSC427/NLP-Project-4/trainMaster.txt"
-    # test_path = sys.argv[3]
-    test_path = "/home/hpc/giordm10/CSC427/NLP-Project-4/testMaster.txt"
+    
 
-    trainingSets = Path("/home/hpc/giordm10/CSC427/NLP-Project-4/trainingSets")
+    # train_path = "/home/hpc/giordm10/Project4/trainMaster.txt"
+    # test_path = "/home/hpc/giordm10/Project4/testMaster.txt"
+    print(fulldataLabeled_path)
+    print(train_path)
+    print(test_path)
+
+    # quit()
+    #"/home/hpc/giordm10/Project4/fulldataLabeled.txt /home/hpc/giordm10/Project4/trainMaster.txt /home/hpc/giordm10/Project4/testMaster.txt"
+
     createOneFile()
     normalize()
     trainTestSplit()
@@ -347,8 +539,9 @@ if __name__ == "__main__":
     all_words = make_vocab()
 
     allmodels = defaultdict(lambda: 0)
-    alltestruns = defaultdict(lambda: 0)
     i = 0
+
+    trainingSets = "./trainingSets"
     for subfolder in os.listdir(trainingSets):
         subfolder_path = os.path.join(trainingSets, subfolder)
 
@@ -363,33 +556,15 @@ if __name__ == "__main__":
             allmodels[i] = countModel
             allmodels[i+30] = binaryModel
 
-            # print("count ", trainfile)
             alltestruns[i] = test_sentences(positive_prob, negative_prob, positive_likelihoods, negative_likelihoods)
-            
-            # print("binary")
             alltestruns[i+30] = test_sentences(positive_prob, negative_prob, positive_bin_likelihoods, negative_bin_likelihoods)
             
             i += 1
-            # print(i)
-            # print()
     
     pairs_list = create_pairs(alltestruns)
 
-    # calc_f_measure(alltestruns)
+    path_to_delete = bootstrap(pairs_list)
 
-    bootstrap(pairs_list)
-
-    # print(alltestruns[0][0][0])
-    # print(pairs_list[0].model_one)
-    # print(pairs_list)
-
-    # print("COUNT MODELS")
-    # print(nbcountmodels)
-    # print()
-    # print("BINARY MODELS")
-    # print(nbbinarymodels)
-
-    # print(nbcountmodels[0].positive_prior)
-    # print(nbcountmodels[0].negative_prior)
-    # print(nbcountmodels[0].positive_likelihoods)
-    # print(nbcountmodels[0].negative_likelihoods)
+    graph(pairs_list)    
+    
+    shutil.rmtree(path_to_delete)

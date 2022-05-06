@@ -1,0 +1,10 @@
+The visual results we obtained show a graph with a curve similar to an 
+inverse exponential function. This visualization shows that the majority 
+of the p-values are close to 0. Since we are graphing 1 - pValue, these values 
+are close to 1 on the y-axis of the graph. 
+The x-axis of our graph is deltaF1 which is the change in our f1 values. As 
+the change in f1 values gets bigger, the p-value gets smaller. 
+
+
+Because the plots are close to 1 on the y-axis, the pValues are mostly under 0.5. 
+Since our threshold is 0.1, our 
