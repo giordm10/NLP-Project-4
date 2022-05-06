@@ -85,6 +85,7 @@ def normalize():
                 text_doc.append(sentence)
 
     #write information back into a file
+    #TODO: don't hardcode it, change it to argv[1]
     with open("fulldataLabeled.txt", "w") as filehandle:
         for review in text_doc:
             for word in review:
@@ -336,6 +337,8 @@ def bootstrap(pairs_list):
             index += 1
         file.close()
 
+    d3_output_file = open("d3_output.txt", "w")
+
     i = 1
     count = 0
     for pair in pairs_list:
@@ -437,10 +440,13 @@ def bootstrap(pairs_list):
     # print("sum is: " + str(sum))
     #print("f-measure is: " + str(delta_x_dict[pair])+" "+str(sum/b))
         f1_pvalue_pairs[i] = tuple((abs(delta_x_dict[pair]),sum/b))        #print("sum: ", sum)
+        
+        
+        d3_output_file.write(str(f1_pvalue_pairs[i]) + "\n")
         print(f1_pvalue_pairs[i])
         i += 1
 
-    #return sum/b
+    return path
 
 def getPValNumerator(delta_xi,delta_x):
     # print("delta_xi: ", delta_xi)
@@ -460,17 +466,17 @@ def graph(pairs_list):
     index = 0
     for data_point in f1_pvalue_pairs:
         x.append(f1_pvalue_pairs[data_point][0])
-        y.append(1 - f1_pvalue_pairs[data_point][1])
+        y.append(f1_pvalue_pairs[data_point][1])
 
         if pairs_list[index].model_one_number <= 29 and pairs_list[index].model_two_number <= 29:
             x1.append(f1_pvalue_pairs[data_point][0])
-            y1.append(1 - f1_pvalue_pairs[data_point][1])
+            y1.append(f1_pvalue_pairs[data_point][1])
         elif pairs_list[index].model_one_number > 29 and pairs_list[index].model_two_number > 29:
             x1.append(f1_pvalue_pairs[data_point][0])
-            y1.append(1 - f1_pvalue_pairs[data_point][1])
+            y1.append(f1_pvalue_pairs[data_point][1])
         else:
             x2.append(f1_pvalue_pairs[data_point][0])
-            y2.append(1 - f1_pvalue_pairs[data_point][1])
+            y2.append(f1_pvalue_pairs[data_point][1])
 
         index += 1
 
@@ -483,7 +489,7 @@ def graph(pairs_list):
 
     plt.show()
 
-    plt.savefig("plot1.png")
+    plt.savefig("plot1_flipped.png")
 
     plt.close()
 
@@ -497,7 +503,7 @@ def graph(pairs_list):
     plt.title("Plot 2")
     plt.show()
 
-    plt.savefig("plot2.png")
+    plt.savefig("plot2_flipped.png")
 
     plt.close()
 
@@ -514,7 +520,6 @@ if __name__ == "__main__":
 
     # quit()
     testfile = "testMaster.txt"
-    trainingSets = Path(fulldataLabeled_path)
     #"/home/hpc/lishkom1/Project4/fulldataLabeled.txt /home/hpc/lishkom1/Project4/trainMaster.txt /home/hpc/lishkom1/Project4/testMaster.txt"
 
     createOneFile()
@@ -527,7 +532,7 @@ if __name__ == "__main__":
     allmodels = defaultdict(lambda: 0)
     i = 0
 
-    #TODO: Don't make trainingSets the path to fulldataLabeled
+    trainingSets = "./trainingSets"
     for subfolder in os.listdir(trainingSets):
         subfolder_path = os.path.join(trainingSets, subfolder)
 
@@ -550,8 +555,8 @@ if __name__ == "__main__":
     
     pairs_list = create_pairs(alltestruns)
 
-    bootstrap(pairs_list)
+    path_to_delete = bootstrap(pairs_list)
 
     graph(pairs_list)    
     
-
+    shutil.rmtree(path_to_delete)

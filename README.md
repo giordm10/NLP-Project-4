@@ -49,5 +49,6 @@ We used B = 1000 for our testing and plot output
 
 Output: \
 the program will output: \
+- d3_output.txt - a file containing each pair of 1770 (deltaF1, pValue) ordered pairs
 - plot1.png - as a new file
 - plot2.png - as a new file
