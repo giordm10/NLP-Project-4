@@ -1,10 +1,11 @@
 from collections import defaultdict
-#from collections import OrderedDict
+# from collections import OrderedDict
 from gettext import translation
 from random import randint
 from pathlib import Path
 import linecache as lc
 import os
+from re import S
 import shutil
 import string
 
@@ -22,12 +23,17 @@ total_word_count_negative = 0
 binary_negative_counts = defaultdict(lambda: 0)
 binary_positive_counts = defaultdict(lambda: 0)
 
-classified_sentences = defaultdict(lambda: 0)
+file_linenum_dict = defaultdict(lambda: 0)
+models_on_testmaster = defaultdict(lambda: 0)
+classified_sentences_count = defaultdict(lambda: 0)
+classified_sentences_binary = defaultdict(lambda: 0)
 delta_x_dict = defaultdict(lambda: 0)
 delta_xi_dict = defaultdict(lambda: 0)
 
 # will all p-values we store be the same?
 f1_pvalue_pairs = defaultdict(lambda: 0)
+
+alltestruns = defaultdict(lambda: 0)
 
 class NBModel():
     def __init__(self, positive_prior, negative_prior, positive_likelihoods, negative_likelihoods):
@@ -37,9 +43,11 @@ class NBModel():
         self.negative_likelihoods = negative_likelihoods
 
 class PairModel():
-    def __init__(self, model_one, model_two):
+    def __init__(self, model_one, model_two, model_one_number, model_two_number):
         self.model_one = model_one
         self.model_two = model_two
+        self.model_one_number = model_one_number
+        self.model_two_number = model_two_number
 
 # T2 part one
 def createOneFile():
@@ -256,13 +264,22 @@ def test_sentences(prior_pos, prior_neg, likelihood_pos, likelihood_neg, whichMo
         final_neg *= prior_neg
 
         return_tuple = tuple((1 if final_pos>final_neg else 0,int(test_array[-1])))
-        classified_sentences[str(line)] = defaultdict(lambda: 0)
-        classified_sentences[str(line)][whichModel] = return_tuple
+        
+        if whichModel < 30:
+            classified_sentences_count[line] = defaultdict(lambda: 0)
+            classified_sentences_count[line][whichModel] = return_tuple
+        else:
+            classified_sentences_binary[line] = defaultdict(lambda: 0)
+            classified_sentences_binary[line][whichModel] = return_tuple
+            
+        # print(classified_sentences_count)
 
         test_bin_classifications.append(return_tuple)
 
         #print("pos: ", final_pos)
         #print("neg: ", final_neg)
+    #print(str(len(test_bin_classifications)))
+    #models_on_testmaster[whichModel] = test_bin_classifications
     return test_bin_classifications
     
 def create_pairs(allmodels):
@@ -277,7 +294,7 @@ def create_pairs(allmodels):
         for model2 in allmodels:
             if model2 not in alreadyTested:
                 
-                new_pair = PairModel(allmodels[model], allmodels[model2])
+                new_pair = PairModel(allmodels[model], allmodels[model2], model, model2)
                 pairs_list.append(new_pair)
                 #print("The output is: " + str(allmodels[model][0]),str(allmodels[model2][0]))
 
@@ -289,6 +306,8 @@ def calc_f_measure(onetestrun):
     true_positives = 0
     false_positives = 0
     false_negatives = 0
+    f_measure = 0
+    # print("Onetestrun: is " + str(type(onetestrun[0])))
     for systemOutput,groundTruth in onetestrun:
         # systemOutput = alltestruns[0]
         # groundTruth = alltestruns[1]
@@ -304,6 +323,7 @@ def calc_f_measure(onetestrun):
     precision = true_positives/(true_positives+false_positives)
 
     f_measure = (2 * precision * recall) / (precision + recall)
+
     # print("f_measure: ", f_measure)
     # print("true_p: ", true_positives)
     # print("false_p: ",false_positives)
@@ -324,8 +344,27 @@ def bootstrap(pairs_list):
         shutil.rmtree(path)
     os.mkdir(path)
 
+    for each in range(1,b+1):
+        filename = "bootstrap"+str(each)+".txt"
+        fullName = os.path.join(path, filename)
+        file = open(fullName,"w+")
+        file_linenum_dict[filename] = defaultdict(lambda: 0)
+        index = 0
+        for number in range(400):
+            r1 = randint(1,400)
+            #print(r1)
+            data = lc.getline('testMaster.txt',r1)
+            file.write(data)
+            file_linenum_dict[filename][index] = r1
+            index += 1
+        file.close()
+
     i = 1
+    count = 0
     for pair in pairs_list:
+        print(count)
+        print()
+        count+=1
         model1 = pair.model_one
         model2 = pair.model_two
         sum = 0.0
@@ -336,9 +375,9 @@ def bootstrap(pairs_list):
         #     count+=1
 
         f_measure_a = calc_f_measure(model1)
-        # print(f_measure_a)
+        # print("f_measure_a: ", f_measure_a)
         f_measure_b = calc_f_measure(model2)
-        # print(f_measure_b)
+        # print("f_measure_b: ", f_measure_b)
         
         delta_x = f_measure_a - f_measure_b
 
@@ -350,40 +389,88 @@ def bootstrap(pairs_list):
 
         # dir1 = open(path,"w")
         #bootstrap_dict = defaultdict(lambda: 0)
-        for each in range(1,b+1):
-            f_measure_axi = 0
-            f_measure_bxi = 0
+        
+        for filename in os.listdir(path):
+            
 
-            file2name = "bootstrap"+str(each)+".txt"
-            fullName = os.path.join(path, file2name)
-            file2 = open(fullName,"w+")
-            for number in range(400):
-                r1 = randint(1,400)
-                #print(r1)
-                data = lc.getline('testMaster.txt',r1)
-                file2.write(data)
-            #file2.close()
+            filepath = os.path.join(path,filename)
+            file = open(filepath,"r")
 
-            for line in file2:
-                f_measure_axi += calc_f_measure(classified_sentences[line]["NBCount"])
-                f_measure_bxi += calc_f_measure(classified_sentences[line]["NBBinary"])
+            a_list = []
+            b_list = []
 
-            delta_xi_dict[file2name] = f_measure_axi - f_measure_bxi
+            # for now, this is storing the same thing in different lists, and pulling from them
+            # we can't make a_list for count and b_list for binary, because we need to compare
+            # two systems in a pair. It's not guaranteed that one is count and the other is binary.
+            # a_list should be for model 1. b_list should be for model 2
+            # the problem is, they're the same list
+            index = 0
+            for line in file:
+                # print(line)
+                # print()
+
+                # index = 0
+                # Loop through the file line by line
+                # file1 = open("testMaster.txt", "r")
+                # for line1 in file1:  
+                        
+                #     # checking string is present in line or not
+                #     if line in line1:
+                #         break
+                #     index += 1
+                #     # print(index)
+
+                #print(type(file_linenum_dict[filename][line]))
+                # print("index: ", index)
+                # print("file_linenum: ", file_linenum_dict[filename][index])
+                # if index == 10:
+                #     index -= 1
+                
+                a_list.append(alltestruns[pair.model_one_number][file_linenum_dict[filename][index] - 1])
+                # print(file_linenum_dict[filename][line])
+                # print("filename: ", type(filename))
+                # print("line: ", type(line))
+                # print(alltestruns[pair.model_one_number][file_linenum_dict[filename][line]])
+                b_list.append(alltestruns[pair.model_two_number][file_linenum_dict[filename][index] - 1])
+
+                index += 1
+
+            # print(a_list)
+            # print()
+            # print(b_list)
+            f_measure_axi = calc_f_measure(a_list)
+            f_measure_bxi = calc_f_measure(b_list)
+            # if a_list == b_list:
+            #     print("true")
+            # else:
+            #     print("false")
+            # print("f_measure_axi: ", f_measure_axi)
+            # print("f_measure_bxi: ", f_measure_bxi)
+            # print()
+        
+            delta_xi_dict[filename] = f_measure_axi - f_measure_bxi
             #print("Deltas are: " + (str(f_measure_a-f_measure_b)))
-
+            
             # The delta calculated for one bootstrap file is compared to the delta for each pair
             # in pairs_list... we add up each sum 1000 times, then divide by b, like in our notes
-            sum += getPValNumerator(delta_xi_dict[file2name],delta_x_dict[pair])
-
-            #print("The sum is: " + str(sum))
-            file2.close()
-        f1_pvalue_pairs[i] = tuple((delta_x_dict[pair],sum/b))
+            sum += getPValNumerator(delta_xi_dict[filename],delta_x_dict[pair])
+            # print("sum is: " + str(sum))
+        #print("The sum is: " + str(sum))
+        file.close()
+    # print("sum is: " + str(sum))
+    #print("f-measure is: " + str(delta_x_dict[pair])+" "+str(sum/b))
+        f1_pvalue_pairs[i] = tuple((abs(delta_x_dict[pair]),sum/b))
+        #print("sum: ", sum)
+        print(f1_pvalue_pairs[i])
         i += 1
 
     #return sum/b
 
 def getPValNumerator(delta_xi,delta_x):
+    # print("delta_xi: ", delta_xi)
+    # print("delta_x: ", delta_x)
     return 1 if delta_xi >= 2*delta_x else 0
+
 
 if __name__ == "__main__":
 
@@ -395,15 +482,14 @@ if __name__ == "__main__":
 
     testfile = "testMaster.txt"
     trainingSets = Path("/home/hpc/lishkom1/Project4/trainingSets")
-    createOneFile()
-    normalize()
-    trainTestSplit()
-    create30trainingSets()
+    # createOneFile()
+    # normalize()
+    # trainTestSplit()
+    # create30trainingSets()
 
     all_words = make_vocab()
 
     allmodels = defaultdict(lambda: 0)
-    alltestruns = defaultdict(lambda: 0)
     i = 0
     for subfolder in os.listdir(trainingSets):
         subfolder_path = os.path.join(trainingSets, subfolder)
@@ -421,26 +507,31 @@ if __name__ == "__main__":
 
             # print("count ", trainfile)
             # run this in bootstrap
-            alltestruns[i] = test_sentences(positive_prob, negative_prob, positive_likelihoods, negative_likelihoods,"NBCount")
+            alltestruns[i] = test_sentences(positive_prob, negative_prob, positive_likelihoods, negative_likelihoods,i)
             
             # print("binary")
-            alltestruns[i+30] = test_sentences(positive_prob, negative_prob, positive_bin_likelihoods, negative_bin_likelihoods,"NBBinary")
+            alltestruns[i+30] = test_sentences(positive_prob, negative_prob, positive_bin_likelihoods, negative_bin_likelihoods,i+30)
             
             i += 1
             # print(i)
             
             # print()
     
+    # print(alltestruns)
+    # print("Starts here: ")
+    # for i in alltestruns:
+    #     print(i)
+    # od = OrderedDict(sorted(alltestruns.items()))
     pairs_list = create_pairs(alltestruns)
-    print(len(pairs_list))
+    # print(len(pairs_list))
     # od = OrderedDict(sorted(allmodels.items()))
     # for model in od:
     #     print(od[model].positive_prior)
     # print(pairs_list[0])
     # calc_f_measure(alltestruns)
 
-    # print(bootstrap(pairs_list))
-
+    bootstrap(pairs_list)
+    # print(f1_pvalue_pairs)
     # print(alltestruns[0][0][0])
     # print(pairs_list[0].model_one)
     # print(pairs_list)
