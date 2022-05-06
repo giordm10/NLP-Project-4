@@ -36,7 +36,7 @@ To run createDataFiles.py, the user will enter: \
 $ python3 createDataFiles.py ****
 
 To run main.py, the user will enter: \
-$ python3 main.py ****
+$ python3 main.py /path/to/fulldataLabeled.txt /path/to/trainMaster.txt /path/to/testMaster.txt
 
 
 

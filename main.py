@@ -7,6 +7,7 @@ import os
 import shutil
 import string
 import matplotlib.pyplot as plt
+import sys
 
 
 # Global Variables
@@ -502,23 +503,31 @@ def graph(pairs_list):
 
 if __name__ == "__main__":
 
-    # imdb_path = sys.argv[1]
-    # train_path = sys.argv[2]
-    train_path = "/home/hpc/lishkom1/Project4/trainMaster.txt"
-    # test_path = sys.argv[3]
-    test_path = "/home/hpc/lishkom1/Project4/testMaster.txt"
+    fulldataLabeled_path = sys.argv[1]
+    train_path = sys.argv[2]
+    # train_path = "/home/hpc/lishkom1/Project4/trainMaster.txt"
+    test_path = sys.argv[3]
+    # test_path = "/home/hpc/lishkom1/Project4/testMaster.txt"
+    print(fulldataLabeled_path)
+    print(train_path)
+    print(test_path)
 
+    # quit()
     testfile = "testMaster.txt"
-    trainingSets = Path("/home/hpc/lishkom1/Project4/trainingSets")
-    # createOneFile()
-    # normalize()
-    # trainTestSplit()
-    # create30trainingSets()
+    trainingSets = Path(fulldataLabeled_path)
+    #"/home/hpc/lishkom1/Project4/fulldataLabeled.txt /home/hpc/lishkom1/Project4/trainMaster.txt /home/hpc/lishkom1/Project4/testMaster.txt"
+
+    createOneFile()
+    normalize()
+    trainTestSplit()
+    create30trainingSets()
 
     all_words = make_vocab()
 
     allmodels = defaultdict(lambda: 0)
     i = 0
+
+    #TODO: Don't make trainingSets the path to fulldataLabeled
     for subfolder in os.listdir(trainingSets):
         subfolder_path = os.path.join(trainingSets, subfolder)
 
