@@ -490,7 +490,7 @@ def graph(pairs_list):
             y2.append(1 - f1_pvalue_pairs[data_point][1])
 
         index += 1
-    print(f1_pvalue_pairs)
+    # print(f1_pvalue_pairs)
     plt.scatter(x, y, marker='x', c='black')
     
     plt.xlabel('deltaF1')

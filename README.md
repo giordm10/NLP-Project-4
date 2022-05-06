@@ -38,7 +38,7 @@ $ python3 createDataFiles.py ****
 To run main.py, the user will enter: \
 $ python3 main.py /path/to/fulldataLabeled.txt /path/to/trainMaster.txt /path/to/testMaster.txt
 
-
+where /path/to/fulldataLabeled.txt is the path to the fulldataLabeled.txt file, /path/to/trainMaster.txt is the path to the trainMaster.txt file and the /path/to/testMaster.txt is the past to the testMaster.txt
 
 ## Notes
 Normalization \
@@ -50,5 +50,5 @@ We used B = 1000 for our testing and plot output
 Output: \
 the program will output: \
 - d3_output.txt - a file containing each pair of 1770 (deltaF1, pValue) ordered pairs
-- plot1.png - as a new file
-- plot2.png - as a new file
+- plot1.png - Which shows the first plot for T9
+- plot2.png - Which shows the second plot for T9

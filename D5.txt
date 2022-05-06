@@ -7,4 +7,4 @@ the change in f1 values gets bigger, the p-value gets smaller.
 
 
 Because the plots are close to 1 on the y-axis, the pValues are mostly under 0.5. 
-Since our threshold is 0.1, our 
+Since we set our threshold is 0.1, our 
