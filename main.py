@@ -10,11 +10,13 @@ import matplotlib.pyplot as plt
 import sys
 
 
-# Global Variables
+# stores all occurrences of every word in the vocabulary
 all_words = defaultdict(lambda: 0)
+# stores negative and positive occurrences, respectively
 all_words_negative = defaultdict(lambda: 0)
 all_words_positive = defaultdict(lambda: 0)
 
+# store versions of each review with duplicate words removed
 clipped_negative_reviews = defaultdict(lambda: 0)
 clipped_positive_reviews = defaultdict(lambda: 0)
 
@@ -24,12 +26,17 @@ total_word_count_negative = 0
 binary_negative_counts = defaultdict(lambda: 0)
 binary_positive_counts = defaultdict(lambda: 0)
 
+# nested dictionary that, for every line of a bootstrap file, stores the line number where it originally appeared in testMaster.txt
 file_linenum_dict = defaultdict(lambda: 0)
+
+# stores delta-f1 measures for how a pair of systems performed on testMaster
 delta_x_dict = defaultdict(lambda: 0)
+# stores delta-f1 measures for how a pair of systems performed on a bootstrap file
 delta_xi_dict = defaultdict(lambda: 0)
 
 f1_pvalue_pairs = defaultdict(lambda: 0)
 
+# for every system, stores pairs of system classification and ground truth (from testMaster.txt)
 alltestruns = defaultdict(lambda: 0)
 
 fulldataLabeled_path = sys.argv[1]
@@ -37,6 +44,13 @@ train_path = sys.argv[2]
 test_path = sys.argv[3]
 
 class NBModel():
+    """
+    Model object that represents a NB learned model
+    positive_prior - value of a document being positive
+    negative_prior - value of a document being negative
+    positive_likelihoods - the likelihoods of each word being in a positive class
+    negative_likelihoods - the likelihoods of each word being in a positive class
+    """
     def __init__(self, positive_prior, negative_prior, positive_likelihoods, negative_likelihoods):
         self.positive_prior = positive_prior
         self.negative_prior = negative_prior
@@ -44,6 +58,12 @@ class NBModel():
         self.negative_likelihoods = negative_likelihoods
 
 class PairModel():
+    """
+    model_one - the first model in the pair
+    model_two - the second model in the pair
+    model_one_number - an identifying number for the first model in the pair
+    model_two_number - an identifying number for the second model in the pair
+    """
     def __init__(self, model_one, model_two, model_one_number, model_two_number):
         self.model_one = model_one
         self.model_two = model_two
@@ -52,6 +72,10 @@ class PairModel():
 
 # T2 part one
 def createOneFile():
+    """
+    Takes all of the input files from sentiment labelled sentences folder and creates one 
+    long concatentated file used in the rest of the program
+    """
     #  List of all files we are tryng to get data from
     original_files = ["amazon_cells_labelled.txt", "imdb_labelled.txt", "yelp_labelled.txt"]
     file_paths = []
@@ -75,6 +99,11 @@ def createOneFile():
                 outfile.write(infile.read())
 
 def normalize():
+    """
+    normalizes our input data
+    - makes all text lowercase
+    - removes all punctuation
+    """
     text_doc = []
     #normalize texts
     with open(fulldataLabeled_path) as f:
@@ -96,6 +125,13 @@ def normalize():
 
 #T2 part two
 def trainTestSplit():
+    """
+    Creates the train and test sets
+    Creates these sets by taking a random 2600 lines of text from fulldataLabelled.txt and putting them in the train set
+    The remaining lines are put into the test set
+    trainMaster.txt is where we store train information
+    testMaster.txt is where we store test information
+    """
     testNumbers = []
     count = 0
     #Creates list of test numbers
@@ -128,6 +164,11 @@ def trainTestSplit():
 
 #T3
 def create30trainingSets():
+    """
+    Creates the 30 training sets from trainMaster.txt
+    Creates 10 training sets for each size of 2600, 1300, and 650 and places them in their respective subdirectory
+    The files in this folder have a number of lines equivalent to their size
+    """
     parent_directory = "trainingSets"
     if not os.path.isdir(parent_directory):
         os.mkdir(parent_directory)
@@ -152,6 +193,12 @@ def create30trainingSets():
             file.close()
 
 def make_vocab():
+    """
+    Creates a dictionary that contains every list in the text and its count
+    Does not include the last character which is the ground truth value of the review
+    Returns:
+        A list of every word in the text and its count
+    """
     with open(fulldataLabeled_path) as f:
         for review in f:
             review = review.split()[:-1]
@@ -162,6 +209,11 @@ def make_vocab():
     return all_words
 
 def calculate_priors():
+    """
+    Calculates the prior probabilities used in calculations
+    Return:
+        The positive and negative prior probabilities
+    """
     all_ratings = []
     positive_count = 0
     negative_count = 0
@@ -182,7 +234,6 @@ def calculate_priors():
                 negative_count += 1
                 total_word_count_negative += (len(review_tokenized))
 
-                #review_tokenized = dict.fromkeys(review_tokenized)
                 clipped_negative_reviews[review] = dict.fromkeys(review_tokenized)
 
                 for word in review_tokenized:
@@ -191,7 +242,6 @@ def calculate_priors():
                 positive_count += 1
                 total_word_count_positive += (len(review_tokenized))
 
-                #review_tokenized = dict.fromkeys(review_tokenized)
                 clipped_positive_reviews[review] = dict.fromkeys(review_tokenized)
 
                 for word in review_tokenized:
@@ -206,6 +256,11 @@ def calculate_priors():
     return positive_prob, negative_prob
 
 def calculate_conditional_likelihoods():
+    """
+    Calculates the conditional likelihoods of a word being in either a positive or negative class
+    Returns:
+        two dictionaries, one for every word and its probability of it being in a positive class and the same for negative (for count)
+    """
     positive_likelihoods = defaultdict(lambda: 0)
     negative_likelihoods = defaultdict(lambda: 0)
 
@@ -216,8 +271,11 @@ def calculate_conditional_likelihoods():
     return positive_likelihoods, negative_likelihoods
 
 def NBBinary():
-    # make review a dictionary, so it's only unique words
-    
+    """
+    Calculates NB classifier, but for binary classification
+    Returns:
+        two dictionaries, one for every word and its probability of being in a positive class and the same for negative (for binary)
+    """
     positive_bin_likelihoods = defaultdict(lambda: 0)
     negative_bin_likelihoods = defaultdict(lambda: 0)
     binary_total_count_positive = 0
@@ -240,6 +298,17 @@ def NBBinary():
     return positive_bin_likelihoods, negative_bin_likelihoods 
 
 def test_sentences(prior_pos, prior_neg, likelihood_pos, likelihood_neg):
+    """
+    Takes the given test file and classifies it using the given NB classifier
+    Args:
+        prior_pos : the value of the positive prior probability
+        prior_neg : the value of the negative prior probability
+        likelihood_pos : a list of all the likelihoods of a word being in a positive document
+        likelihood_neg : a list of all the likelihoods of a word being in a negative document
+
+    Returns:
+        dictionary of all the classifications
+    """
     file = open(test_path,"r")
     test_bin_classifications = []
     for line in file:
@@ -263,6 +332,14 @@ def test_sentences(prior_pos, prior_neg, likelihood_pos, likelihood_neg):
     return test_bin_classifications
     
 def create_pairs(allmodels):
+    """
+    Creates pair objects of NB Classifier objects
+    Args:
+        allmodels : a list of all 60 models we have created
+
+    Returns:
+        a list of all 1770 pairs of models
+    """
     #Creates the list of pairs for T6
     alreadyTested = []
     pairs_list = []
@@ -277,6 +354,16 @@ def create_pairs(allmodels):
     return pairs_list
 
 def calc_f_measure(onetestrun):
+    """
+    takes in a list of tuples
+    List will be 400 tuples, each with a given system output and ground truth
+    calculates the f1 measure based on these pairs
+    Args:
+        onetestrun : a list of 400 tuples
+
+    Returns:
+        the f1 measure of a given system
+    """
     true_positives = 0
     false_positives = 0
     false_negatives = 0
@@ -298,6 +385,16 @@ def calc_f_measure(onetestrun):
     return f_measure
     
 def bootstrap(pairs_list):
+    """
+    Creates the list of 1000 bootstrap samples for bootstrap sampling
+    Calculates the delta f1 measure of two systems in pair, as well as the p-value
+    Creates a tuple of these two values used in outputs and graphing
+    Args:
+        list of all 1770 pairs of NB classifiers
+
+    Returns:
+        path to where temporary bootstrap files are located
+    """
     # b can be any positive integer but we chose 1000 for our b value
     b = 1000
 
@@ -389,6 +486,11 @@ def getPValNumerator(delta_xi,delta_x):
 
 
 def graph(pairs_list):
+    """
+    Creates graphs based on p-value and delta f1 measure
+    Args:
+        list of all 1770 pairs
+    """
     x = []
     y = []
 
@@ -442,13 +544,9 @@ def graph(pairs_list):
 
 if __name__ == "__main__":
 
-    # train_path = "/home/hpc/giordm10/Project4/trainMaster.txt"
-    # test_path = "/home/hpc/giordm10/Project4/testMaster.txt"
     print(fulldataLabeled_path)
     print(train_path)
     print(test_path)
-
-    #"/home/hpc/giordm10/Project4/fulldataLabeled.txt /home/hpc/giordm10/Project4/trainMaster.txt /home/hpc/giordm10/Project4/testMaster.txt"
 
     createOneFile()
     normalize()
