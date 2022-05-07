@@ -1,9 +1,9 @@
 What was easy about this assignment?
 The easiest part of the assignment was understanding and working with the initial 
-dataset. The data was easy to access and read. Also, the concatenatinating of the 
+dataset. The data was easy to access and read. Also, the concatenation of the 
 imdb_labelled.txt, amazon_cells_labelled.txt, and yelp_labelled.txt into 
-a single file as well as text normalization was easy for this assignment since 
-we have already learned how to efficiently normalize data in previous projects.
+a single file as well as text normalization was easy, since 
+we had already learned how to efficiently normalize data in previous projects.
 
 What was challenging about this assignment or parts that you couldn't
 get working correctly?
@@ -11,32 +11,33 @@ A challenging piece of the assignment was working on the implementation of
 the f-measure calculation for binary classification. There are a lot of components
 that need to be calculated in order to correctly return f-measure. Trying to find
 an efficient way to run our code was very challenging, as code that takes a long
-time to run is harder to debug and use.
+time to run is harder to test and debug.
 
 What did you like about this assignment?
-We liked being able to calculate the predicted sentiment and compare how the models run.
-Performing calculations and working with real-life data is more interesting and it is 
-fun to see all the calculations that the computer can perform with the given data set.
+We liked comparing the sentiment predictions of the different models.
+Graphically displaying and interpreting our results gave us an understanding
+of why we were seeing what we saw, rather than producing the calculations by themselves.
 
 What did you dislike about this assignment?
 We disliked the length of this assignment. It was assigned at a point in the semester when
 every computer science class has a final project or assignment due at the same time. This
 caused this project to be a big stressor for our group. It became difficult for us to find time
 to work on the project together since we had to meet many times in order to finish all 10 of
-the tasks. The content of the assignment was interesting, however, we believe that it would
+the tasks. The content of the assignment was interesting, but we believe that it would
 have been better if we had more time to work on it.
 
 How did your team function? Include details regarding what each team member contributed, how 
 the team communicated with each other, and how team software development & design was accomplished.
 All of our team contributed to the code, with Casey and Michael contributing the most. Our team 
 communicated through GroupMe to coordinate team meetings to code together. Usually, we tried to meet 
-in person, but sometimes we had certain members meet over Zoom as well. We used VS Code liveshare to 
+in person, but sometimes we had certain members meet over Zoom. We used VSCode liveshare to 
 work on the same piece of code simultaneously. We also pushed the code to a GitHub repository for 
 version control. This also allowed individual members of our team to work on the project on their own 
 time if desired. Poean and Rebecca worked on debugging the written code, as well as documenting the 
-scripts and keeping the GitHub up to date. 
+scripts and keeping the GitHub up to date.
 
 What did you learn from this assignment?
-We attained a clearer understanding of algorithms and processes such as the bootstrap algorithm 
-and calculating the f-measure of the dataset. We also saw the importance of choosing meaningful
-variable names, since we ended up with a lot of different variables with similar names. 
+We attained a clearer understanding of optimizing computationally intensive tasks through the
+use of multiple dictionaries. We mastered bootstrapping and gained hands-on experience calculating 
+f-measures, both of which are useful in real-world settings. We also saw the importance of choosing meaningful
+variable names, since we had previously given similar names to different variables.

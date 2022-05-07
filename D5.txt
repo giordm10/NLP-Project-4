@@ -1,10 +1,21 @@
-The visual results we obtained show a graph with a curve similar to an 
-inverse exponential function. This visualization shows that the majority 
-of the p-values are close to 0. Since we are graphing 1 - pValue, these values 
-are close to 1 on the y-axis of the graph. 
-The x-axis of our graph is deltaF1 which is the change in our f1 values. As 
-the change in f1 values gets bigger, the p-value gets smaller. 
+Plot 1 and Plot 2, which are included in this package, were obtained by graphing delta F1 measures--
+the differences in F1 measures of two systems in pair (where a system is either NBCount or NBBinary
+run on a particular training file)--on the x-axis against 1-pValue on the y-axis,
+where p-value is a measure of confidence that the result is not due to chance. P-values were subtracted
+from 1 because we want to place more confidence in high estimates (which usually mean low confidence).
+Bootstrap samples are virtual test files that were created by randomly pulling lines with replacement from
+the real-world testMaster.txt. If we want to be sure that one system is better than another in pair, then
+our program should have more confidence in their performance differences on the actual test file, and less
+in those for muddled, randomly generated samples. In Plots 1 and 2, however, we observe high confidence in
+the majority of delta F1 system differences on the bootstrap files, when 1-pValue is considered on the
+y-axis instead. The probability that the alternative hypothesis (1-pValue) is true for the virtual test 
+files is high; we cannot reject the null hypothesis that the first system performs no better than the second
+in a pair. We therefore cannot definitively say that our delta F1 measures on the true testMaster.txt are 
+not due to chance.
 
-
-Because the plots are close to 1 on the y-axis, the pValues are mostly under 0.5. 
-Since we set our threshold is 0.1, our 
+The trend of high 1-pValue estimates appears in Plot 2 as well as Plot 1, the former of which distinguishes
+between two systems in pair that use the same data representation (NBCount or NBBinary) and those that use
+different ones. This suggests high confidence that one system performs better than another, even when they are
+of the same type. The only real difference between two of a kind is that they were run on distinct training files. If
+our program's confidence in the worth of a system is so easily determined by the sort of input it is fed, then
+perhaps our results are in fact due to chance.

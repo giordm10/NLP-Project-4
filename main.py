@@ -56,7 +56,6 @@ def createOneFile():
     original_files = ["amazon_cells_labelled.txt", "imdb_labelled.txt", "yelp_labelled.txt"]
     file_paths = []
 
-    # TODO: make this user input
     dir = "./sentiment labelled sentences"
 
     # Creates a list of all full path files
@@ -129,7 +128,6 @@ def trainTestSplit():
 
 #T3
 def create30trainingSets():
-    #TODO: make this not run if file already exists
     parent_directory = "trainingSets"
     if not os.path.isdir(parent_directory):
         os.mkdir(parent_directory)
@@ -269,31 +267,22 @@ def create_pairs(allmodels):
     alreadyTested = []
     pairs_list = []
     for model in allmodels:
-        # print("model: ", model)
-        #print(allmodels[model])
         alreadyTested.append(model)
-        # print(model)
         for model2 in allmodels:
             if model2 not in alreadyTested:
                 
                 new_pair = PairModel(allmodels[model], allmodels[model2], model, model2)
                 pairs_list.append(new_pair)
-                #print("The output is: " + str(allmodels[model][0]),str(allmodels[model2][0]))
 
-    # print(pairs_list)
     return pairs_list
 
 def calc_f_measure(onetestrun):
-    # for item in alltestruns.keys():
     true_positives = 0
     false_positives = 0
     false_negatives = 0
     f_measure = 0
-    # print("Onetestrun: is " + str(type(onetestrun[0])))
+
     for systemOutput,groundTruth in onetestrun:
-        # systemOutput = alltestruns[0]
-        # groundTruth = alltestruns[1]
-        # print (systemOutput,groundTruth)
         if systemOutput == 1 and groundTruth == 1:
             true_positives += 1
         elif systemOutput == 1 and groundTruth == 0:
@@ -306,17 +295,11 @@ def calc_f_measure(onetestrun):
 
     f_measure = (2 * precision * recall) / (precision + recall)
 
-    # print("f_measure: ", f_measure)
-    # print("true_p: ", true_positives)
-    # print("false_p: ",false_positives)
-    # print("false_n: ",false_negatives)
-    # print()
     return f_measure
     
 def bootstrap(pairs_list):
-    b = 1000    #count = 0
-    #sum = 0.0
-    #delta_x = 0
+    # b can be any positive integer but we chose 1000 for our b value
+    b = 1000
 
     directory = "bootstrap_samples"
     parent_dir = os.getcwd()
@@ -333,7 +316,6 @@ def bootstrap(pairs_list):
         index = 0
         for number in range(400):
             r1 = randint(1,400)
-            #print(r1)
             data = lc.getline(test_path,r1)
             file.write(data)
             file_linenum_dict[filename][index] = r1
@@ -352,15 +334,8 @@ def bootstrap(pairs_list):
         model2 = pair.model_two
         sum = 0.0
 
-        # if count == 0:
-        #     print("Model 1 is: " + str(model1))
-        #     print("Model 2 is: " + str(model2))
-        #     count+=1
-
         f_measure_a = calc_f_measure(model1)
-        # print("f_measure_a: ", f_measure_a)
         f_measure_b = calc_f_measure(model2)
-        # print("f_measure_b: ", f_measure_b)
         
         swapped = False
         if f_measure_a < f_measure_b:
@@ -370,13 +345,6 @@ def bootstrap(pairs_list):
         delta_x = f_measure_a - f_measure_b
 
         delta_x_dict[pair] = delta_x
-
-        #print(delta_x)
-
-        #file = open(test_path,"r")
-
-        # dir1 = open(path,"w")
-        #bootstrap_dict = defaultdict(lambda: 0)
         
         for filename in os.listdir(path):
             
@@ -387,71 +355,28 @@ def bootstrap(pairs_list):
             a_list = []
             b_list = []
 
-            # for now, this is storing the same thing in different lists, and pulling from them
-            # we can't make a_list for count and b_list for binary, because we need to compare
-            # two systems in a pair. It's not guaranteed that one is count and the other is binary.
-            # a_list should be for model 1. b_list should be for model 2
-            # the problem is, they're the same list
             index = 0
             for line in file:
-                # print(line)
-                # print()
 
-                # index = 0
-                # Loop through the file line by line
-                # file1 = open(test_path, "r")
-                # for line1 in file1:  
-                        
-                #     # checking string is present in line or not
-                #     if line in line1:
-                #         break
-                #     index += 1
-                #     # print(index)
-
-                #print(type(file_linenum_dict[filename][line]))
-                # print("index: ", index)
-                # print("file_linenum: ", file_linenum_dict[filename][index])
-                # if index == 10:
-                #     index -= 1
                 if swapped == False:
                     a_list.append(alltestruns[pair.model_one_number][file_linenum_dict[filename][index] - 1])
                     b_list.append(alltestruns[pair.model_two_number][file_linenum_dict[filename][index] - 1])
                 else:
                     a_list.append(alltestruns[pair.model_two_number][file_linenum_dict[filename][index] - 1])
                     b_list.append(alltestruns[pair.model_one_number][file_linenum_dict[filename][index] - 1])
-                # print(file_linenum_dict[filename][line])
-                # print("filename: ", type(filename))
-                # print("line: ", type(line))
-                # print(alltestruns[pair.model_one_number][file_linenum_dict[filename][line]])
-                
 
                 index += 1
 
-            # print(a_list)
-            # print()
-            # print(b_list)
             f_measure_axi = calc_f_measure(a_list)
             f_measure_bxi = calc_f_measure(b_list)
-            # if a_list == b_list:
-            #     print("true")
-            # else:
-            #     print("false")
-            # print("f_measure_axi: ", f_measure_axi)
-            # print("f_measure_bxi: ", f_measure_bxi)
-            # print()
         
             delta_xi_dict[filename] = f_measure_axi - f_measure_bxi
-            #print("Deltas are: " + (str(f_measure_a-f_measure_b)))
-            
-            # The delta calculated for one bootstrap file is compared to the delta for each pair
-            # in pairs_list... we add up each sum 1000 times, then divide by b, like in our notes
+
             sum += getPValNumerator(delta_xi_dict[filename],delta_x_dict[pair])
-            # print("sum is: " + str(sum))
-        #print("The sum is: " + str(sum))
+
         file.close()
-    # print("sum is: " + str(sum))
-    #print("f-measure is: " + str(delta_x_dict[pair])+" "+str(sum/b))
-        f1_pvalue_pairs[i] = tuple((delta_x_dict[pair],sum/b))        #print("sum: ", sum)
+
+        f1_pvalue_pairs[i] = tuple((delta_x_dict[pair],sum/b))
         print(f1_pvalue_pairs[i])
 
         d3_output_file.write(str(f1_pvalue_pairs[i]) + "\n")
@@ -460,8 +385,6 @@ def bootstrap(pairs_list):
     return path
 
 def getPValNumerator(delta_xi,delta_x):
-    # print("delta_xi: ", delta_xi)
-    # print("delta_x: ", delta_x)
     return 1 if delta_xi >= 2*delta_x else 0
 
 
@@ -490,7 +413,6 @@ def graph(pairs_list):
             y2.append(1 - f1_pvalue_pairs[data_point][1])
 
         index += 1
-    # print(f1_pvalue_pairs)
     plt.scatter(x, y, marker='x', c='black')
     
     plt.xlabel('deltaF1')
@@ -500,7 +422,7 @@ def graph(pairs_list):
 
     plt.show()
 
-    plt.savefig("plot1_test.png")
+    plt.savefig("plot1.png")
 
     plt.close()
 
@@ -514,13 +436,11 @@ def graph(pairs_list):
     plt.title("Plot 2")
     plt.show()
 
-    plt.savefig("plot2_test.png")
+    plt.savefig("plot2.png")
 
     plt.close()
 
 if __name__ == "__main__":
-
-    
 
     # train_path = "/home/hpc/giordm10/Project4/trainMaster.txt"
     # test_path = "/home/hpc/giordm10/Project4/testMaster.txt"
@@ -528,7 +448,6 @@ if __name__ == "__main__":
     print(train_path)
     print(test_path)
 
-    # quit()
     #"/home/hpc/giordm10/Project4/fulldataLabeled.txt /home/hpc/giordm10/Project4/trainMaster.txt /home/hpc/giordm10/Project4/testMaster.txt"
 
     createOneFile()
